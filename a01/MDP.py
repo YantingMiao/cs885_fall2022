@@ -48,18 +48,18 @@ class MDP:
         
         # temporary values to ensure that the code compiles until this
         # function is coded
-        v = np.zeros(self.nStates)
+        V = np.copy(initialV)
         iterId = 0
         while iterId < nIterations:
             epsilon = 0
             for state in range(self.nStates):
-                v[state] = self.getMaxValue(initialV, state)
-                epsilon = max(epsilon, np.abs(v[state] - initialV[state]))
-            initialV = np.copy(v)
+                prev_V = np.copy(V)
+                V[state] = self.getMaxValue(V, state)
+                epsilon = max(epsilon, np.abs(V[state] - prev_V[state]))
             iterId += 1
             if epsilon < tolerance:
                 break
-        return [v,iterId,epsilon]
+        return [V,iterId,epsilon]
 
     def getOptimalAction(self, value, state):
         v_max, optimal = -np.inf, None
@@ -200,7 +200,7 @@ class MDP:
         iterId = 0
         epsilon = 0
         while iterId < nIterations:
-            V, _, __ = self.evaluatePolicyPartially(policy, V, nIterations=nEvalIterations, tolerance=tolerance)
+            V = self.evaluatePolicyPartially(policy, V, nIterations=nEvalIterations, tolerance=tolerance)[0]
             policy, _ = self.policyImprove(V, policy)
             prev_v = np.copy(V)
             for state in range(self.nStates):
