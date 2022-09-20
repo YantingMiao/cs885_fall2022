@@ -11,7 +11,7 @@ mdp = MDP.MDP(T,R,discount)
 rlProblem = RL.RL(mdp,np.random.normal)
 
 # Test Q-learning 
-[Q,policy] = rlProblem.qLearning(s0=0,initialQ=np.zeros([mdp.nActions,mdp.nStates]),nEpisodes=1000,nSteps=100,epsilon=0.3)
+[Q,policy] = rlProblem.qLearning(s0=0,initialQ=np.zeros([mdp.nActions,mdp.nStates]),nEpisodes=200,nSteps=100,epsilon=0, temperature=10)
 print("\nQ-learning results")
 print(Q)
 print(policy)

@@ -56,7 +56,7 @@ class RL:
             return action
         if epsilon == 0 and temperature > 0:
             p = np.exp(temp / temperature) / np.sum(np.exp(temp / temperature))
-            action = np.random.choice(n_actions, p)
+            action = np.random.choice(n_actions, 1, p=p)[0]
             return action
         # to select one of the actions of equal Q-value at random due to Python's sort is stable
         action = self.shuffleAction(temp)
