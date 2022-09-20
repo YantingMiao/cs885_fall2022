@@ -62,12 +62,9 @@ class MDP:
         return [V,iterId,epsilon]
 
     def getOptimalAction(self, value, state):
-        v_max, optimal = -np.inf, None
-        for action in range(self.nActions):
-            temp = self.R[action][state] + self.discount * np.dot(self.T[action][state], value)
-            if temp > v_max:
-                v_max, optimal = temp, action
-        return optimal
+        reward, transition = self.R[:, state], self.T[:, state, :]
+        optimal_action = np.argmax(reward + self.discount * np.dot(transition, value))
+        return optimal_action
 
     def extractPolicy(self,V):
         '''Procedure to extract a policy from a value function
@@ -201,12 +198,14 @@ class MDP:
         epsilon = 0
         while iterId < nIterations:
             V = self.evaluatePolicyPartially(policy, V, nIterations=nEvalIterations, tolerance=tolerance)[0]
-            policy, _ = self.policyImprove(V, policy)
+            policy, done  = self.policyImprove(V, policy)
+            iterId += 1
+            # if done:
+            #     break
             prev_v = np.copy(V)
             for state in range(self.nStates):
                 V[state] = self.getMaxValue(V, state)
             epsilon = np.linalg.norm(V - prev_v, np.inf)
-            iterId += 1
             if epsilon < tolerance:
                 break
         return [policy,V,iterId,epsilon]

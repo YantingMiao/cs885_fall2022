@@ -35,41 +35,32 @@ class RL:
         nextState = np.where(cumProb >= np.random.rand(1))[0][0]
         return [reward,nextState]
 
-    def selectOptimalAction(self, Q, state, epsilon=0, temperature=0):
-        n_actions = self.mdp.nActions
-        temp = np.zeros(n_actions)
-        for action in range(n_actions):
-            temp[action] = Q[action][state]
-        if epsilon > 0:
-            if np.random.rand() < epsilon:
-                action = np.random.choice(n_actions)
-            else:
-                # to select one of the actions of equal Q-value at random due to Python's sort is stable
-                q_action_pairs = []
-                for action, q in enumerate(temp):
-                    q_action_pairs.append((q, action))
-                np.random.shuffle(q_action_pairs)
-                q_action_pairs.sort(key=lambda x:x[0], reverse=True)
-                action = q_action_pairs[0][1]
-            return action
-        if temperature > 0:
-            p = np.exp(temp / temperature) / np.sum(np.exp(temp / temperature))
-            action = np.random.choice(n_actions, p)
-            return action
-        # to select one of the actions of equal Q-value at random due to Python's sort is stable
+    def shuffleAction(self, value_list):
         q_action_pairs = []
-        for action, q in enumerate(temp):
+        for action, q in enumerate(value_list):
             q_action_pairs.append((q, action))
         np.random.shuffle(q_action_pairs)
         q_action_pairs.sort(key=lambda x:x[0], reverse=True)
         action = q_action_pairs[0][1]
         return action
 
-    def computeMaxQ(self, Q, state):
-        q = 0
-        for action in range(self.mdp.nActions):
-            q = max(q, Q[action][state])
-        return q
+    def selectOptimalAction(self, Q, state, epsilon=0, temperature=0):
+        n_actions = self.mdp.nActions
+        temp = Q[:, state]
+        if epsilon > 0:
+            if np.random.rand() < epsilon:
+                action = np.random.choice(n_actions)
+            else:
+                # to select one of the actions of equal Q-value at random due to Python's sort is stable
+                action = self.shuffleAction(temp)
+            return action
+        if epsilon == 0 and temperature > 0:
+            p = np.exp(temp / temperature) / np.sum(np.exp(temp / temperature))
+            action = np.random.choice(n_actions, p)
+            return action
+        # to select one of the actions of equal Q-value at random due to Python's sort is stable
+        action = self.shuffleAction(temp)
+        return action
 
     def culmulativeReward(self, reward, episode, discount, t):
         cul_reward = (discount ** t) * reward
@@ -79,10 +70,10 @@ class RL:
         return self.reward_list
 
     def qLearning(self,s0,initialQ,nEpisodes,nSteps,epsilon=0,temperature=0):
-        '''qLearning algorithm.  Epsilon exploration and Boltzmann exploration
-        are combined in one procedure by sampling a random action with 
-        probabilty epsilon and performing Boltzmann exploration otherwise.  
-        When epsilon and temperature are set to 0, there is no exploration.
+        '''qLearning algorithm.  
+        When epsilon > 0: perform epsilon exploration (i.e., with probability epsilon, select action at random )
+        When epsilon == 0 and temperature > 0: perform Boltzmann exploration with temperature parameter
+        When epsilon == 0 and temperature == 0: no exploration (i.e., selection action with best Q-value)
 
         Inputs:
         s0 -- initial state
@@ -108,7 +99,7 @@ class RL:
             for t in range(nSteps):
                 action = self.selectOptimalAction(Q, state, epsilon, temperature)
                 reward, next_state = self.sampleRewardAndNextState(state, action)
-                q_next = self.computeMaxQ(Q, next_state)
+                q_next = np.max(Q[:, next_state])
                 count[state, action] += 1
                 alpha = 1 / count[state, action]
                 Q[action][state] += alpha * (reward + self.mdp.discount * q_next - Q[action][state])
