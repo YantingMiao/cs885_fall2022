@@ -16,6 +16,4 @@
 #SBATCH --error=slurm-%j.err
 
 # put your command here
-python3 DQN-soln-targetnetworkupdate.py
-python3 DQN-soln-DQN-soln-minibatchsize.p
-python3 DQN-soln-trainepoch.py 
+python3 DQN-soln-minibatchsize.py
