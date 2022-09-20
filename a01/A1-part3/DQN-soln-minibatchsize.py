@@ -194,11 +194,11 @@ if __name__ == "__main__":
     MINIBATCH_SIZE = 1
     plot_seeds('dqn-mb-1', 'black')
     MINIBATCH_SIZE = 10
-    plot_seeds('dqn-mb-10', 'gray')
+    plot_seeds('dqn-mb-10', 'red')
     MINIBATCH_SIZE = 50
-    plot_seeds('dqn-mb-50', 'darkgray')
+    plot_seeds('dqn-mb-50', 'blue')
     MINIBATCH_SIZE = 100
-    plot_seeds('dqn-mb-100', 'lightgray')
+    plot_seeds('dqn-mb-100', 'green')
     
     plt.legend(loc='best')
-    plt.show()
+    plt.savefig('minibatchsize.png')

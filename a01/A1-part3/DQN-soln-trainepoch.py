@@ -189,16 +189,16 @@ def plot_seeds(name, color):
 
 if __name__ == "__main__":
 
-    # Minibatch size
-    MINIBATCH_SIZE = 10
-    TARGET_UPDATE_FREQ = 1
-    plot_seeds('dqn-tn-1', 'black')
+    # train epoch
     TARGET_UPDATE_FREQ = 10
-    plot_seeds('dqn-tn-10', 'red')
-    TARGET_UPDATE_FREQ = 50
-    plot_seeds('dqn-tn-50', 'blue')
-    TARGET_UPDATE_FREQ = 100
-    plot_seeds('dqn-tn-100', 'green')
+    TRAIN_EPOCHS = 1
+    plot_seeds('dqn-te-1', 'black')
+    TRAIN_EPOCHS = 5
+    plot_seeds('dqn-te-5', 'red')
+    TRAIN_EPOCHS = 10
+    plot_seeds('dqn-te-10', 'blue')
+    TRAIN_EPOCHS = 50
+    plot_seeds('dqn-te-50', 'green')
     
     plt.legend(loc='best')
-    plt.savefig('targetFreq.png')
+    plt.savefig('trainEpochs.png')
