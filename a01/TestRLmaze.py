@@ -308,7 +308,7 @@ rlProblem = RL.RL(mdp,np.random.normal)
 
 n_trails = 100
 n_episodes, n_steps = 200, 100
-epsilon_list = [0.1, 0.3, 0.5]
+epsilon_list = [0.1]
 
 def plot_curves(data, color_list, label_list):
     for i in range(data.shape[0]):
@@ -320,7 +320,6 @@ def plot_curves(data, color_list, label_list):
     plt.title(r'Avg Cumulative Rewards via Different  $\epsilon$')
     plt.savefig('epsilon.png')
 
-# Test Q-learning
 # Test Q-learning
 results = np.zeros((len(epsilon_list), n_episodes))
 for i, epsilon in enumerate(epsilon_list):
@@ -335,6 +334,3 @@ for i, epsilon in enumerate(epsilon_list):
 
 print('Q =', Q)
 print('policy =', policy)
-
-color_list = ['orange', 'blue', 'green']
-plot_curves(results, color_list, epsilon_list)
