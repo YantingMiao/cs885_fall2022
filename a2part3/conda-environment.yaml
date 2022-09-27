@@ -9,6 +9,7 @@ dependencies:
   - pytorch=1.12.1=py3.10_cuda11.3_cudnn8.3.2_0
   - pytorch-mutex=1.0=cuda
   - tqdm=4.64.1
+  - pip
   - pip:
     - gym==0.25.1
     - gym-notices==0.0.8
