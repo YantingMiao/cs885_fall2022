@@ -165,7 +165,7 @@ class MDP:
         while iterId < nIterations:
             epsilon = 0
             prev_v = np.copy(V)
-            V = reward + self.discount * np.dot(transition, V)
+            V = reward + self.discount * np.dot(transition, prev_v)
             epsilon = np.linalg.norm(V - prev_v, np.inf)
             iterId += 1
             if epsilon < tolerance:
