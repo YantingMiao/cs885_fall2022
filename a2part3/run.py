@@ -10,12 +10,11 @@ from torch.utils.data import DataLoader, TensorDataset
 import wandb
 from collections import deque
 import pickle
+from matplotlib import pyplot as plt
 
 def set_config():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--algo', type=str, default='cqldqn', help='algo name, default:cql')
     parser.add_argument('--env', type=str, default='CartPole-v0', help='environment name, defalult: CartPole-v0')
-    parser.add_argument('--seed', type=int, default=10)
     parser.add_argument('--episodes', type=int, default=200)
     parser.add_argument('--save_every', type=int, default=50)
     parser.add_argument('--eval_every', type=int, default=10)
@@ -24,7 +23,6 @@ def set_config():
     parser.add_argument('--lr', type=float, default=3e-04)
     parser.add_argument('--cql_alpha', type=float, default=1.0)
     parser.add_argument('--tau', type=float, default=1e-02)
-    parser.add_argument('--cql_rescaled', type=float, default=1.0)
 
     args = parser.parse_args()
     return args
@@ -69,69 +67,95 @@ def evaluate(env, agent, eavl_runs=5):
         avg_rewards.append(cumulative_reward)
     return np.mean(avg_rewards)
 
-def train(config):
-    np.random.seed(config.seed)
-    random.seed(config.seed)
-    torch.manual_seed(config.seed)
-    
+def train(config, seed, algo='cqldqn'):
+    np.random.seed(seed)
+    random.seed(seed)
+    torch.manual_seed(seed)
+    last10_stats = []
     import os
     path = './datasets'
     if not os.path.exists(path):
         raise Exception('Download datasets first please!')
-    dataloader, env = create_dataloader_env(batch_size=config.batch_size, seed=config.seed)
+    dataloader, env = create_dataloader_env(batch_size=config.batch_size, seed=seed)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     avg_last10 = deque(maxlen=10)
 
-    with wandb.init(project='cs885a2', name=config.algo + ', alpha=' + str(config.cql_alpha) + ', env:' + config.env + ', seed=' + str(config.seed), config=config):
-        if config.algo == 'cqldqn':
-            agent = CQLDQN(state_size=env.observation_space.shape[0],
-                           action_size=env.action_space.n,
-                           hidden_size=config.hidden_size,
-                           alpha=config.cql_alpha,
-                           device=device,
-                           cql_rescaled=config.cql_rescaled,
-                           lr=config.lr,
-                           tau=config.tau,)
-        
-        if config.algo == 'dqn':
-            agent = DeepQN(state_size=env.observation_space.shape[0],
-                           action_size=env.action_space.n,
-                           hidden_size=config.hidden_size,
-                           lr=config.lr,
-                           tau=config.tau,
-                           device=device)
+    if algo == 'cqldqn':
+        agent = CQLDQN(state_size=env.observation_space.shape[0],
+                       action_size=env.action_space.n,
+                       hidden_size=config.hidden_size,
+                       alpha=config.cql_alpha,
+                       device=device,
+                       lr=config.lr,
+                       tau=config.tau,)
+    elif algo == 'dqn':
+        agent = DeepQN(state_size=env.observation_space.shape[0],
+                       action_size=env.action_space.n,
+                       hidden_size=config.hidden_size,
+                       device=device,
+                       lr=config.lr,
+                       tau=config.tau,)
+    else:
+        raise Exception('Only supports cqldqn and dqn.')
     
-        wandb.watch(agent, log='gradients', log_freq=10)
-        returns = evaluate(env, agent)
-        avg_last10.append(returns)
-        wandb.log({'Test Returns': returns, 'Episode': 0})
-        for i in range(1, config.episodes + 1):
-            for states, actions, rewards, next_states, dones in dataloader:
-                states = states.to(device)
-                actions = actions.to(device)
-                rewards = rewards.to(device)
-                next_states = next_states.to(device)   
-                dones = dones.to(device)
-                batch = (states, actions, rewards, next_states, dones)
-                total_loss, cql_loss, bellman_error = agent.learn(batch)
-                
-            if i % config.eval_every == 0:
-                returns = evaluate(env, agent)
-                wandb.log({'Test Returns': returns, 'Episode': i})
-                avg_last10.append(returns)
-                print('Episode: {}, Normalized Returns: {}'.format(i, returns))
-            
-            wandb.log({
-                'Last 10 Avg Normalized Returns': np.mean(avg_last10),
-                'Total Loss': total_loss,
-                'CQL Loss': cql_loss,
-                'Bellman Error': bellman_error,
-                'Episode': i
-            })
+    returns = evaluate(env, agent)
+    avg_last10.append(returns)
 
-            if i % config.save_every == 0:
-                save(agent.q_net, filename='cqldqn_cartpole')
+    for i in range(1, config.episodes + 1):
+        for states, actions, rewards, next_states, dones in dataloader:
+            states = states.to(device)
+            actions = actions.to(device)
+            rewards = rewards.to(device)
+            next_states = next_states.to(device)   
+            dones = dones.to(device)
+            batch = (states, actions, rewards, next_states, dones)
+            total_loss, cql_loss, bellman_error = agent.learn(batch)
+            
+        if i % config.eval_every == 0:
+            returns = evaluate(env, agent)
+            avg_last10.append(returns)
+            print('Episode: {}, Test Returns: {}'.format(i, returns))
+        
+        last10_stats.append(np.mean(avg_last10))
+
+        if i % config.save_every == 0:
+            save(agent.q_net, filename='cqldqn_cartpole')
+
+    return last10_stats
+
+def plot_curves(data, colors, labels, path='./results.png'):
+    for i, v in enumerate(data):
+        mean = np.mean(v, 0)
+        std = np.std(v, 0)
+        x = np.arange(v.shape[1])
+        plt.plot(x, mean, color=colors[i], label=labels[i])
+        plt.fill_between(x, np.maximum(mean - std, 0), np.minimum(mean + std, 200), color=colors[i], alpha=0.3)
+    plt.legend(loc='best')
+    plt.xlabel('# Episodes')
+    plt.ylabel('Avg Last 10 Returns')
+    plt.title('CQLDQN vs DQN')
+    plt.grid()
+    plt.savefig(path)
+
+def main():
+    config = set_config()
+    seeds = [1, 2, 3]
+    # seeds = [1, 2, 3, 4, 5]
+    algos = ['cqldqn', 'dqn']
+    plot_data = []
+    for algo in algos:
+        results = []
+        for seed in seeds:
+            avg_last10_stats = train(config, seed=seed, algo=algo)
+            avg_last10 = np.array(avg_last10_stats).reshape(1, -1)
+            results.append(avg_last10)
+        data = np.concatenate(results, axis=0)
+        plot_data.append(data)
+
+    colors = ['gold', 'deepskyblue']
+    labels = ['CQLDQN', 'DQN']
+    plot_curves(plot_data, colors, labels)
+
 
 if __name__ == '__main__':
-    config = set_config()
-    train(config)
+    main()

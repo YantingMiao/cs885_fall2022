@@ -16,8 +16,7 @@ class CQLDQN(nn.Module):
                  gamma=0.99,
                  lr=1e-03,
                  optim_class=optim.Adam,
-                 alpha=1.0,
-                 cql_rescaled=1.0):
+                 alpha=1.0,):
         super(CQLDQN, self).__init__()
 
         self.state_size = state_size
@@ -27,7 +26,6 @@ class CQLDQN(nn.Module):
         self.gamma = gamma
         assert alpha > 0
         self.alpha = alpha
-        self.cql_rescaled = cql_rescaled
 
         self.q_net = DQN(self.state_size, self.action_size, hidden_size).to(self.device)
         self.target_q_net = DQN(self.state_size, self.action_size, hidden_size).to(self.device)
@@ -55,7 +53,7 @@ class CQLDQN(nn.Module):
         q_pi = q_values.max(1)[0]
 
         bellman_error = self.q_criterion(q_pred, q_targets)
-        cql_loss = self.cql_rescaled * (q_pi.mean() - q_pred.mean())
+        cql_loss = q_pi.mean() - q_pred.mean()
         total_loss = self.alpha * cql_loss + bellman_error
         self.q_optimizer.zero_grad()
         total_loss.backward()

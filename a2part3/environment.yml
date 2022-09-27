@@ -1,7 +1,7 @@
 name: cs885a2p3
 dependencies:
   - python=3.10.4
-  # - cudatoolkit=11.3.1
+  - cudatoolkit=11.3.1
   - pytorch
   - tqdm
   - pip
