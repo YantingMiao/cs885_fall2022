@@ -9,6 +9,7 @@ from torch.utils.data import DataLoader, TensorDataset
 from collections import deque
 import pickle
 from matplotlib import pyplot as plt
+from tqdm import tqdm
 
 def set_config():
     parser = argparse.ArgumentParser()
@@ -54,13 +55,14 @@ def create_dataloader_env(batch_size=256):
 def evaluate(env, agent, seed, eval_runs=5):
     avg_rewards = []
     for i in range(eval_runs):
-        state = env.reset()[0]
+        state = env.reset(seed=seed)[0]
         cumulative_reward = 0
         done = False
         while not done:
             action = agent.get_action(state, 0.0)
-            state, reward, done, _, __ = env.step(action)
+            state, reward, done, trunc, __ = env.step(action)
             cumulative_reward += reward
+            done = done | trunc
         avg_rewards.append(cumulative_reward)
     return np.mean(avg_rewards)
 
@@ -98,7 +100,7 @@ def train(config, seed, algo='cqldqn'):
     returns = evaluate(env, agent, seed=seed)
     avg_last10.append(returns)
 
-    for i in range(1, config.episodes + 1):
+    for i in tqdm(range(1, config.episodes + 1)):
         for states, actions, rewards, next_states, dones in dataloader:
             states = states.to(device)
             actions = actions.to(device)
