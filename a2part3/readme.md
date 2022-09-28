@@ -1,7 +1,7 @@
 ### Installation Guide
 #### Conda enviroments
 ```sh
-conda env create -f enviroment.yml
+conda env create -f environment.yml
 conda activate cs885a2p3
 ```
 #### Prepare Dataset

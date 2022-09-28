@@ -1,4 +1,3 @@
-from email.errors import ObsoleteHeaderDefect
 import gym
 import argparse
 import torch
@@ -7,7 +6,6 @@ import random
 from utils import save
 from cql import CQLDQN, DeepQN
 from torch.utils.data import DataLoader, TensorDataset
-import wandb
 from collections import deque
 import pickle
 from matplotlib import pyplot as plt
@@ -27,7 +25,7 @@ def set_config():
     args = parser.parse_args()
     return args
 
-def create_dataloader_env(batch_size=256, seed=1):
+def create_dataloader_env(batch_size=256):
     with open('./datasets/cartPole_pure_0.0_0.pkl', 'rb') as f:
         dataset = pickle.load(f)
     tensors = {'observations': [], 'actions': [], 'rewards': [], 'next_observations': [], 'dones': []}
@@ -51,18 +49,17 @@ def create_dataloader_env(batch_size=256, seed=1):
     dataloader = DataLoader(tensor_dataset, batch_size=batch_size, shuffle=True)
 
     eval_env = gym.make('CartPole-v0')
-    eval_env.seed(seed)
     return dataloader, eval_env
 
-def evaluate(env, agent, eavl_runs=5):
+def evaluate(env, agent, seed, eval_runs=5):
     avg_rewards = []
-    for i in range(eavl_runs):
-        state = env.reset()
+    for i in range(eval_runs):
+        state = env.reset()[0]
         cumulative_reward = 0
         done = False
         while not done:
             action = agent.get_action(state, 0.0)
-            state, reward, done, _ = env.step(action)
+            state, reward, done, _, __ = env.step(action)
             cumulative_reward += reward
         avg_rewards.append(cumulative_reward)
     return np.mean(avg_rewards)
@@ -76,7 +73,7 @@ def train(config, seed, algo='cqldqn'):
     path = './datasets'
     if not os.path.exists(path):
         raise Exception('Download datasets first please!')
-    dataloader, env = create_dataloader_env(batch_size=config.batch_size, seed=seed)
+    dataloader, env = create_dataloader_env(batch_size=config.batch_size)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     avg_last10 = deque(maxlen=10)
 
@@ -98,7 +95,7 @@ def train(config, seed, algo='cqldqn'):
     else:
         raise Exception('Only supports cqldqn and dqn.')
     
-    returns = evaluate(env, agent)
+    returns = evaluate(env, agent, seed=seed)
     avg_last10.append(returns)
 
     for i in range(1, config.episodes + 1):
@@ -112,7 +109,7 @@ def train(config, seed, algo='cqldqn'):
             total_loss, cql_loss, bellman_error = agent.learn(batch)
             
         if i % config.eval_every == 0:
-            returns = evaluate(env, agent)
+            returns = evaluate(env, agent, seed=seed)
             avg_last10.append(returns)
             print('Episode: {}, Test Returns: {}'.format(i, returns))
         
@@ -139,7 +136,7 @@ def plot_curves(data, colors, labels, path='./results.png'):
 
 def main():
     config = set_config()
-    seeds = [1, 2, 3]
+    seeds = [1]
     # seeds = [1, 2, 3, 4, 5]
     algos = ['cqldqn', 'dqn']
     plot_data = []
