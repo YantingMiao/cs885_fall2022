@@ -25,7 +25,7 @@ parser.add_argument('--mode', type=str, default="cartpole")
 args = parser.parse_args()
 
 # Constants
-SEED = 1
+SEED = 3
 t = utils.torch.TorchHelper()
 DEVICE = t.device
 
