@@ -115,7 +115,7 @@ def train(S,A,returns):
         delta = returns - V(S)
         gammas = build_gammas(S.shape[0])
         # policy_loss = -(gammas * delta.detach() * log_pis).sum()
-        policy_loss = -(delta.detach() * log_pis).sum()
+        policy_loss = -(delta.detach() * log_pis).mean()
         policy_optimizer.zero_grad()
         policy_loss.backward()
         policy_optimizer.step()

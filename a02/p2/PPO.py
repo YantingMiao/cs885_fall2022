@@ -74,9 +74,10 @@ pi = torch.nn.Sequential(
 ).to(DEVICE)
 
 # Optimizers
-OPT1 = torch.optim.Adam(V.parameters(), lr = LEARNING_RATE1)
-OPT2 = torch.optim.Adam(pi.parameters(), lr = LEARNING_RATE2)
-
+# OPT1 = torch.optim.Adam(V.parameters(), lr = LEARNING_RATE1)
+# OPT2 = torch.optim.Adam(pi.parameters(), lr = LEARNING_RATE2)
+value_optimizer = torch.optim.Adam(V.parameters(), lr=LEARNING_RATE1)
+policy_optimizer = torch.optim.Adam(pi.parameters(), lr=LEARNING_RATE2)
 # Policy
 def policy(env, obs):
     probs = torch.nn.Softmax(dim=-1)(pi(t.f(obs)))
@@ -103,7 +104,24 @@ def train(S,A,returns, old_log_probs):
         # implement objective and update for policy
         # follow the slides for this
         
-    #################################
+        # Update policy networks
+        advantage = (returns - V(S)).detach()
+        logsoftmax = torch.nn.LogSoftmax(dim=-1)
+        log_pis = logsoftmax(pi(S)).gather(1, A.view(-1, 1)).view(-1)
+        ratio = torch.exp(log_pis - old_log_probs)
+        policy_target1 = ratio * advantage
+        policy_target2 = torch.clamp(ratio, min=1-CLIP_PARAM, max=1+CLIP_PARAM) * advantage
+        policy_loss = -torch.min(policy_target1, policy_target2).mean()
+        policy_optimizer.zero_grad()
+        policy_loss.backward()
+        policy_optimizer.step()
+
+        # Update value networks
+        value_criterion = torch.nn.MSELoss()
+        value_loss = value_criterion(V(S), returns)
+        value_optimizer.zero_grad()
+        value_loss.backward()
+        value_optimizer.step()
 
 # Play episodes
 Rs = [] 
