@@ -26,7 +26,7 @@ args = parser.parse_args()
 
 
 # Constants
-SEED = 1
+SEED = 7
 t = utils.torch.TorchHelper()
 DEVICE = t.device
 
