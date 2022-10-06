@@ -114,14 +114,15 @@ def train(S,A,returns):
         log_pis = logsoftmax(pi(S)).gather(1, A.view(-1, 1)).view(-1)
         delta = returns - V(S)
         gammas = build_gammas(S.shape[0])
-        policy_loss = -(gammas * delta.detach() * log_pis).sum()
-        # policy_loss = -(delta.detach() * log_pis).sum()
+        # policy_loss = -(gammas * delta.detach() * log_pis).sum()
+        policy_loss = -(delta.detach() * log_pis).sum()
         policy_optimizer.zero_grad()
         policy_loss.backward()
         policy_optimizer.step()
         
         # update value function
-        value_loss = torch.mean(torch.square(delta))
+        value_criterion = nn.MSELoss()
+        value_loss = value_criterion(V(S), returns)
         value_optimizer.zero_grad()
         value_loss.backward()
         value_optimizer.step()
@@ -177,7 +178,7 @@ plt.plot(range(N), last25Rs, 'b')
 plt.xlabel('Episode')
 plt.ylabel('Reward (averaged over last 25 episodes)')
 plt.title("REINFORCE with Baseline, mode: " + args.mode)
-plt.savefig("images/reinforce_baseline-"+args.mode+"-gamma.png")
+plt.savefig("images/reinforce_baseline-"+args.mode+".png")
 print("Episodic reward plot saved!")
 
 # Play test episodes
