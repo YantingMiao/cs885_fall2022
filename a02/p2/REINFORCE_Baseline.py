@@ -80,14 +80,8 @@ def policy(env, obs):
     return np.random.choice(ACT_N, p = probs.cpu().detach().numpy())
 
 def build_gammas(horizon):
-    gammas = [1] * horizon
-    for t in range(horizon):
-        if t == 0:
-            gammas[t] = 1
-        else: 
-            gammas[t] = GAMMA * gammas[t - 1]
-    gammas = np.array(gammas)
-    gammas = torch.from_numpy(gammas).to(DEVICE)
+    H = torch.arange(horizon).to(DEVICE)
+    gammas = GAMMA ** H
     return gammas
 
 # Training function
