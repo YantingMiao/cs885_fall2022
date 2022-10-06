@@ -114,7 +114,8 @@ def train(S,A,returns):
         log_pis = logsoftmax(pi(S)).gather(1, A.view(-1, 1)).view(-1)
         delta = returns - V(S)
         gammas = build_gammas(S.shape[0])
-        policy_loss = -(gammas * delta.detach() * log_pis).sum()
+        # policy_loss = -(gammas * delta.detach() * log_pis).sum()
+        policy_loss = -(delta.detach() * log_pis).sum()
         policy_optimizer.zero_grad()
         policy_loss.backward()
         policy_optimizer.step()
@@ -122,7 +123,7 @@ def train(S,A,returns):
         # update value function
         value_loss = torch.mean(torch.square(delta))
         value_optimizer.zero_grad()
-        value_optimizer.backward()
+        value_loss.backward()
         value_optimizer.step()
 
 # Play episodes
