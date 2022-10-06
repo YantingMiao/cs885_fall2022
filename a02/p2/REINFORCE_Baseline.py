@@ -25,7 +25,7 @@ parser.add_argument('--mode', type=str, default="cartpole")
 args = parser.parse_args()
 
 # Constants
-SEED = 10
+SEED = 1
 t = utils.torch.TorchHelper()
 DEVICE = t.device
 
@@ -79,11 +79,6 @@ def policy(env, obs):
     probs = torch.nn.Softmax(dim=-1)(pi(t.f(obs)))
     return np.random.choice(ACT_N, p = probs.cpu().detach().numpy())
 
-def build_gammas(horizon):
-    H = torch.arange(horizon).to(DEVICE)
-    gammas = GAMMA ** H
-    return gammas
-
 # Training function
 # S = tensor of states observed in the episode/ batch of episodes
 # A = tensor of actions taken in episode/ batch of episodes
@@ -107,7 +102,8 @@ def train(S,A,returns):
         # update policy networks
         log_pis = logsoftmax(pi(S)).gather(1, A.view(-1, 1)).view(-1)
         delta = returns - V(S)
-        gammas = build_gammas(S.shape[0])
+        H = torch.arange(S.shape[0]).to(DEVICE)
+        gammas = GAMMA ** H
         policy_loss = -(gammas * delta.detach() * log_pis).mean()
         # policy_loss = -(delta.detach() * log_pis).mean()
         policy_optimizer.zero_grad()
