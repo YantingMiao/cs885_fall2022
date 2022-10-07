@@ -163,7 +163,6 @@ class MDP:
             transition[state] = self.T[policy[state], state]
 
         while iterId < nIterations:
-            epsilon = 0
             prev_v = np.copy(V)
             V = reward + self.discount * np.dot(transition, prev_v)
             epsilon = np.linalg.norm(V - prev_v, np.inf)
