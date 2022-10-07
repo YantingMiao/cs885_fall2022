@@ -90,12 +90,6 @@ def train(S,A,returns):
     # Implement the training of the value function (follow slides, doing a gradient update per
     # step in the episode)
     # ....
-    # update value function
-    value_criterion = nn.MSELoss()
-    value_loss = value_criterion(V(S), returns)
-    value_optimizer.zero_grad()
-    value_loss.backward()
-    value_optimizer.step()
     
     # policy gradient with baseline
     # apply accumulated gradient across the episode
@@ -103,8 +97,15 @@ def train(S,A,returns):
         # implement objective and update for policy
         # should be similar to REINFORCE + small change
     #################################
-        logsoftmax = torch.nn.LogSoftmax(dim=-1)
+        # update value function
+        value_criterion = nn.MSELoss()
+        value_loss = value_criterion(V(S), returns)
+        value_optimizer.zero_grad()
+        value_loss.backward()
+        value_optimizer.step()
+
         # update policy networks
+        logsoftmax = torch.nn.LogSoftmax(dim=-1)
         log_pis = logsoftmax(pi(S)).gather(1, A.view(-1, 1)).view(-1)
         delta = returns - V(S)
         H = torch.arange(S.shape[0]).to(DEVICE)
