@@ -104,7 +104,7 @@ def train(S,A,returns):
         delta = returns - V(S)
         H = torch.arange(S.shape[0]).to(DEVICE)
         gammas = GAMMA ** H
-        policy_loss = -(gammas * delta.detach() * log_pis).mean()
+        policy_loss = -(gammas * delta.detach() * log_pis).sum()
         # policy_loss = -(delta.detach() * log_pis).mean()
         policy_optimizer.zero_grad()
         policy_loss.backward()
