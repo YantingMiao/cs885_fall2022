@@ -97,12 +97,6 @@ def train(S,A,returns):
         # implement objective and update for policy
         # should be similar to REINFORCE + small change
     #################################
-        # update value function
-        value_criterion = nn.MSELoss()
-        value_loss = value_criterion(V(S), returns)
-        value_optimizer.zero_grad()
-        value_loss.backward()
-        value_optimizer.step()
 
         # update policy networks
         logsoftmax = torch.nn.LogSoftmax(dim=-1)
@@ -115,6 +109,13 @@ def train(S,A,returns):
         policy_optimizer.zero_grad()
         policy_loss.backward()
         policy_optimizer.step()
+
+        # update value function
+        value_criterion = nn.MSELoss()
+        value_loss = value_criterion(V(S), returns)
+        value_optimizer.zero_grad()
+        value_loss.backward()
+        value_optimizer.step()
 
 # Play episodes
 Rs = [] 

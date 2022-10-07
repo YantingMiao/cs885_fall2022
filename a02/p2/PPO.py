@@ -104,13 +104,6 @@ def train(S,A,returns, old_log_probs):
         # implement objective and update for policy
         # follow the slides for this
         
-        # Update value networks
-        value_criterion = torch.nn.MSELoss()
-        value_loss = value_criterion(V(S), returns)
-        value_optimizer.zero_grad()
-        value_loss.backward()
-        value_optimizer.step()
-        
         # Update policy networks
         advantage = (returns - V(S)).detach()
         logsoftmax = torch.nn.LogSoftmax(dim=-1)
@@ -122,6 +115,13 @@ def train(S,A,returns, old_log_probs):
         policy_optimizer.zero_grad()
         policy_loss.backward()
         policy_optimizer.step()
+
+        # Update value networks
+        value_criterion = torch.nn.MSELoss()
+        value_loss = value_criterion(V(S), returns)
+        value_optimizer.zero_grad()
+        value_loss.backward()
+        value_optimizer.step()
 
 # Play episodes
 Rs = [] 
