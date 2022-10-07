@@ -52,9 +52,9 @@ class MDP:
         iterId = 0
         while iterId < nIterations:
             epsilon = 0
+            prev_V = np.copy(V)
             for state in range(self.nStates):
-                prev_V = np.copy(V)
-                V[state] = self.getMaxValue(V, state)
+                V[state] = self.getMaxValue(prev_V, state)
                 epsilon = max(epsilon, np.abs(V[state] - prev_V[state]))
             iterId += 1
             if epsilon < tolerance:
