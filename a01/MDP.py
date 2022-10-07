@@ -204,7 +204,7 @@ class MDP:
             #     break
             prev_v = np.copy(V)
             for state in range(self.nStates):
-                V[state] = self.getMaxValue(V, state)
+                V[state] = self.getMaxValue(prev_v, state)
             epsilon = np.linalg.norm(V - prev_v, np.inf)
             if epsilon < tolerance:
                 break
