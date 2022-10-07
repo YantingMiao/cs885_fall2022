@@ -4,7 +4,6 @@ import RL2
 from matplotlib import pyplot as plt
 from tqdm import tqdm
 
-
 def sampleBernoulli(mean):
     ''' function to obtain a sample from a Bernoulli distribution
 
