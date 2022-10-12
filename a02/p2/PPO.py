@@ -97,7 +97,8 @@ def train(S,A,returns, old_log_probs):
     # Use the same implementation you did in REINFORCE_Baseline.py for estimating the advantage function
     # (instead of following the PPO slides)
     value_criterion = torch.nn.MSELoss()
-    for _ in range(10):
+    value_iters = 5
+    for _ in range(value_iters):
         # Update value networks
         value_loss = value_criterion(V(S), returns)
         value_optimizer.zero_grad()
