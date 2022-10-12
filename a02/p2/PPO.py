@@ -97,6 +97,12 @@ def train(S,A,returns, old_log_probs):
     # Use the same implementation you did in REINFORCE_Baseline.py for estimating the advantage function
     # (instead of following the PPO slides)
 
+    # Update value networks
+    value_criterion = torch.nn.MSELoss()
+    value_loss = value_criterion(V(S), returns)
+    value_optimizer.zero_grad()
+    value_loss.backward()
+    value_optimizer.step()
 
     # PPO 
     # gradient ascent for POLICY_TRAIN_ITERS steps
@@ -115,14 +121,6 @@ def train(S,A,returns, old_log_probs):
         policy_optimizer.zero_grad()
         policy_loss.backward()
         policy_optimizer.step()
-
-        # Update value networks
-        value_criterion = torch.nn.MSELoss()
-        value_loss = value_criterion(V(S), returns)
-        value_optimizer.zero_grad()
-        value_loss.backward()
-        value_optimizer.step()
-
 # Play episodes
 Rs = [] 
 last25Rs = []
