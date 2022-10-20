@@ -46,7 +46,7 @@ class CQLDQN(nn.Module):
     def learn(self, batch):
         states, actions, rewards, next_states, dones = batch
         with torch.no_grad():
-            q_targets_next = self.target_q_net(next_states).detach().max(1)[0].unsqueeze(1)
+            q_targets_next = self.target_q_net(next_states).max(1)[0].unsqueeze(1)
             q_targets = rewards + (1 - dones) * self.gamma * q_targets_next
         q_values = self.q_net(states)
         q_pred = q_values.gather(1, actions.unsqueeze(1))
@@ -100,7 +100,7 @@ class DeepQN(nn.Module):
     def learn(self, batch):
         states, actions, rewards, next_states, dones = batch
         with torch.no_grad():
-            q_targets_next = self.target_q_net(next_states).detach().max(1)[0].unsqueeze(1)
+            q_targets_next = self.target_q_net(next_states).max(1)[0].unsqueeze(1)
             q_targets = rewards + (1 - dones) * self.gamma * q_targets_next
         q_values = self.q_net(states)
         q_pred = q_values.gather(1, actions.unsqueeze(1))

@@ -13,6 +13,8 @@ import argparse
 warnings.filterwarnings("ignore")
 
 # Proximal Policy Optimization
+# Slide 14
+# cs.uwaterloo.ca/~ppoupart/teaching/cs885-fall21/slides/cs885-module1.pdf
 
 parser = argparse.ArgumentParser()
 
@@ -35,7 +37,7 @@ if args.mode == "cartpole":
     OBS_N = 4               # State space size
     ACT_N = 2               # Action space size
     ENV_NAME = "CartPole-v0"
-    GAMMA = 0.99               # Discount factor in episodic reward objective
+    GAMMA = 1.0               # Discount factor in episodic reward objective
     LEARNING_RATE1 = 5e-4     # Learning rate for value optimizer
     LEARNING_RATE2 = 5e-4     # Learning rate for actor optimizer
     POLICY_TRAIN_ITERS = 10   # Training epochs
@@ -49,7 +51,7 @@ elif "mountain_car" in args.mode:
     LEARNING_RATE2 = 1e-3     # Learning rate for actor optimizer
     POLICY_TRAIN_ITERS = 5   # Training epochs
    
-EPOCHS = 150              # Total number of epochs to learn over
+EPOCHS = 150            # Total number of epochs to learn over
 EPISODES_PER_EPOCH = 1    # Episodes per epoch
 TEST_EPISODES = 10        # Test episodes
 HIDDEN = 32               # Hidden size
@@ -74,10 +76,9 @@ pi = torch.nn.Sequential(
 ).to(DEVICE)
 
 # Optimizers
-# OPT1 = torch.optim.Adam(V.parameters(), lr = LEARNING_RATE1)
-# OPT2 = torch.optim.Adam(pi.parameters(), lr = LEARNING_RATE2)
-value_optimizer = torch.optim.Adam(V.parameters(), lr=LEARNING_RATE1)
-policy_optimizer = torch.optim.Adam(pi.parameters(), lr=LEARNING_RATE2)
+OPT1 = torch.optim.Adam(V.parameters(), lr = LEARNING_RATE1)
+OPT2 = torch.optim.Adam(pi.parameters(), lr = LEARNING_RATE2)
+
 # Policy
 def policy(env, obs):
     probs = torch.nn.Softmax(dim=-1)(pi(t.f(obs)))
@@ -86,33 +87,28 @@ def policy(env, obs):
 # Training function
 # S = tensor of states observed in the episode/ batch of episodes
 # A = tensor of actions taken in episode/ batch of episodes
-# return = tensor where nth element is \sum^{T-n}_0 gamma^n * reward (return at step n of episode)
+# return = tensor where nth element is \sum^{T-n}_0 gamma^n * reward (discounted reward up to step n of episode)
 # old_log_probs = tensor of pi(a | s) for policy the trajectory was collected under
 def train(S,A,returns, old_log_probs):
+    for i in range(returns.size()[0]):
+        OPT1.zero_grad()
 
-    ###############################
-    # YOUR CODE HERE:
-    value_criterion = torch.nn.MSELoss()
+        objective1 = 0.5 * (GAMMA**i) * (returns[i] - V(S[i,:])).pow(2)
+        objective1.backward()
+        OPT1.step()
+
     # PPO 
     # gradient ascent for POLICY_TRAIN_ITERS steps
     for i in range(POLICY_TRAIN_ITERS):
-        # Update policy networks
-        advantage = (returns - V(S).squeeze()).detach()
-        logsoftmax = torch.nn.LogSoftmax(dim=-1)
-        log_pis = logsoftmax(pi(S)).gather(1, A.view(-1, 1)).view(-1)
-        ratio = torch.exp(log_pis - old_log_probs)
-        policy_target1 = ratio * advantage
-        policy_target2 = torch.clamp(ratio, min=1-CLIP_PARAM, max=1+CLIP_PARAM) * advantage
-        policy_loss = -torch.min(policy_target1, policy_target2).mean()
-        policy_optimizer.zero_grad()
-        policy_loss.backward()
-        policy_optimizer.step()
+        OPT2.zero_grad()
+        log_probs = torch.nn.LogSoftmax(dim=-1)(pi(S)).gather(1, A.view(-1, 1)).view(-1)
+        advantages = returns - V(S)
+        ratio = torch.exp(log_probs - old_log_probs)
+        clipped_ratio = torch.clamp(ratio, 1-CLIP_PARAM, 1+CLIP_PARAM)
+        objective2 = -torch.min(ratio * advantages, clipped_ratio * advantages).mean()
+        objective2.backward()
+        OPT2.step()
 
-        # Update value networks
-        value_loss = value_criterion(V(S), returns.unsqueeze(1))
-        value_optimizer.zero_grad()
-        value_loss.backward()
-        value_optimizer.step()
 # Play episodes
 Rs = [] 
 last25Rs = []
@@ -165,8 +161,8 @@ N = len(last25Rs)
 plt.plot(range(N), last25Rs, 'b')
 plt.xlabel('Episode')
 plt.ylabel('Reward (averaged over last 25 episodes)')
-plt.title("PPO, mode: " + args.mode)
-plt.savefig("images/ppo-"+args.mode+".png")
+plt.title("Last Year PPO, mode: " + args.mode)
+plt.savefig("images/last_ppo-"+args.mode+".png")
 print("Episodic reward plot saved!")
 
 # Play test episodes

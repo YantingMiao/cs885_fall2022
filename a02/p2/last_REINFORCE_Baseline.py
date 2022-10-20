@@ -12,7 +12,9 @@ import argparse
 
 warnings.filterwarnings("ignore")
 
-# Proximal Policy Optimization
+# REINFORCE with baseline
+# Slide 6
+# cs.uwaterloo.ca/~ppoupart/teaching/cs885-fall21/slides/cs885-module1.pdf
 
 parser = argparse.ArgumentParser()
 
@@ -24,7 +26,6 @@ parser.add_argument('--mode', type=str, default="cartpole")
 
 args = parser.parse_args()
 
-
 # Constants
 SEED = 1
 t = utils.torch.TorchHelper()
@@ -35,11 +36,9 @@ if args.mode == "cartpole":
     OBS_N = 4               # State space size
     ACT_N = 2               # Action space size
     ENV_NAME = "CartPole-v0"
-    GAMMA = 0.99               # Discount factor in episodic reward objective
-    LEARNING_RATE1 = 5e-4     # Learning rate for value optimizer
-    LEARNING_RATE2 = 5e-4     # Learning rate for actor optimizer
-    POLICY_TRAIN_ITERS = 10   # Training epochs
-
+    GAMMA = 1.0             # Discount factor in episodic reward objective
+    LEARNING_RATE1 = 5e-4   # Learning rate for value optimizer
+    LEARNING_RATE2 = 5e-4   # Learning rate for actor optimizer
 elif "mountain_car" in args.mode:
     OBS_N = 2
     ACT_N = 3
@@ -47,13 +46,13 @@ elif "mountain_car" in args.mode:
     GAMMA = 0.9               # Discount factor in episodic reward objective
     LEARNING_RATE1 = 1e-3     # Learning rate for value optimizer
     LEARNING_RATE2 = 1e-3     # Learning rate for actor optimizer
-    POLICY_TRAIN_ITERS = 5   # Training epochs
-   
-EPOCHS = 150              # Total number of epochs to learn over
-EPISODES_PER_EPOCH = 1    # Episodes per epoch
-TEST_EPISODES = 10        # Test episodes
-HIDDEN = 32               # Hidden size
-CLIP_PARAM = 0.1          # Clip parameter
+ 
+EPOCHS = 800            # Total number of epochs to learn over
+EPISODES_PER_EPOCH = 1  # Epsides per epoch
+TEST_EPISODES = 10      # Test episodes
+HIDDEN = 32             # Hidden size
+POLICY_TRAIN_ITERS = 1  # Training epochs
+
 
 
 # Create environment
@@ -74,45 +73,42 @@ pi = torch.nn.Sequential(
 ).to(DEVICE)
 
 # Optimizers
-# OPT1 = torch.optim.Adam(V.parameters(), lr = LEARNING_RATE1)
-# OPT2 = torch.optim.Adam(pi.parameters(), lr = LEARNING_RATE2)
-value_optimizer = torch.optim.Adam(V.parameters(), lr=LEARNING_RATE1)
-policy_optimizer = torch.optim.Adam(pi.parameters(), lr=LEARNING_RATE2)
+OPT1 = torch.optim.Adam(V.parameters(), lr = LEARNING_RATE1)
+OPT2 = torch.optim.Adam(pi.parameters(), lr = LEARNING_RATE2)
+
 # Policy
 def policy(env, obs):
     probs = torch.nn.Softmax(dim=-1)(pi(t.f(obs)))
     return np.random.choice(ACT_N, p = probs.cpu().detach().numpy())
 
+
 # Training function
 # S = tensor of states observed in the episode/ batch of episodes
 # A = tensor of actions taken in episode/ batch of episodes
-# return = tensor where nth element is \sum^{T-n}_0 gamma^n * reward (return at step n of episode)
-# old_log_probs = tensor of pi(a | s) for policy the trajectory was collected under
-def train(S,A,returns, old_log_probs):
+# return = tensor where nth element is \sum^{T-n}_0 gamma^n * reward (discounted reward up to step n of episode)
+def train(S,A,returns):
+    n = torch.arange(S.size(0)).to(DEVICE)
+    
+    # iterations for update of baseline (via function V(s))
+    # iterate over steps of the episode, and 
+    for i in range(returns.size()[0]):
+        OPT1.zero_grad()
+        
+        objective1 = 0.5 * (GAMMA**i) * (returns[i] - V(S[i,:])).pow(2)
+        objective1.backward()
+        OPT1.step()
 
-    ###############################
-    # YOUR CODE HERE:
-    value_criterion = torch.nn.MSELoss()
-    # PPO 
-    # gradient ascent for POLICY_TRAIN_ITERS steps
+    # baseline update
+    # apply accumulated gradient across the episode
     for i in range(POLICY_TRAIN_ITERS):
-        # Update policy networks
-        advantage = (returns - V(S).squeeze()).detach()
-        logsoftmax = torch.nn.LogSoftmax(dim=-1)
-        log_pis = logsoftmax(pi(S)).gather(1, A.view(-1, 1)).view(-1)
-        ratio = torch.exp(log_pis - old_log_probs)
-        policy_target1 = ratio * advantage
-        policy_target2 = torch.clamp(ratio, min=1-CLIP_PARAM, max=1+CLIP_PARAM) * advantage
-        policy_loss = -torch.min(policy_target1, policy_target2).mean()
-        policy_optimizer.zero_grad()
-        policy_loss.backward()
-        policy_optimizer.step()
+        OPT2.zero_grad()
+        log_probs = torch.nn.LogSoftmax(dim=-1)(pi(S)).gather(1, A.view(-1, 1)).view(-1)
+        advantages = returns - V(S)
+       
+        objective2 = -((GAMMA**n) * advantages.detach() * log_probs).sum()
+        objective2.backward()
+        OPT2.step()
 
-        # Update value networks
-        value_loss = value_criterion(V(S), returns.unsqueeze(1))
-        value_optimizer.zero_grad()
-        value_loss.backward()
-        value_optimizer.step()
 # Play episodes
 Rs = [] 
 last25Rs = []
@@ -126,12 +122,12 @@ for epi in pbar:
         
         # Play an episode and log episodic reward
         S, A, R = utils.envs.play_episode(env, policy)
-        
-        # modify the reward for "mountain_car_mod" mode
+
+        #modify the reward for "mountain_car_mod" mode
         # replace reward with the height of the car (which is first component of state)
         if args.mode == "mountain_car_mod":
             R = [s[0] for s in S[:-1]]
-            
+
 
         all_S += S[:-1] # ignore last state
         all_A += A
@@ -145,13 +141,11 @@ for epi in pbar:
 
     Rs += [sum(R)]
     S, A = t.f(np.array(all_S)), t.l(np.array(all_A))
+
     returns = torch.cat(all_returns, dim=0).flatten()
 
-    # pi(a |s) for trajectories observed above
-    log_probs = torch.nn.LogSoftmax(dim=-1)(pi(S)).gather(1, A.view(-1, 1)).view(-1)
-
     # train
-    train(S, A, returns, log_probs.detach())
+    train(S, A, returns)
 
     # Show mean episodic reward over last 25 episodes
     last25Rs += [sum(Rs[-25:])/len(Rs[-25:])]
@@ -165,8 +159,8 @@ N = len(last25Rs)
 plt.plot(range(N), last25Rs, 'b')
 plt.xlabel('Episode')
 plt.ylabel('Reward (averaged over last 25 episodes)')
-plt.title("PPO, mode: " + args.mode)
-plt.savefig("images/ppo-"+args.mode+".png")
+plt.title("Last Year REINFORCE with Baseline, mode: " + args.mode)
+plt.savefig("images/last_reinforce_baseline-"+args.mode+".png")
 print("Episodic reward plot saved!")
 
 # Play test episodes
@@ -174,8 +168,9 @@ print("Testing:")
 testRs = []
 for epi in range(TEST_EPISODES):
     S, A, R = utils.envs.play_episode(env, policy, render = False)
-    
-    # modify the reward for "mountain_car_mod" mode
+
+    #for mountain car environment, report the height the car achieved instead of reward
+    #modify the reward for "mountain_car_mod" mode
     # replace reward with the height of the car (which is first component of state)
     if "mountain_car" in args.mode:
         R = [s[0] for s in S[:-1]]

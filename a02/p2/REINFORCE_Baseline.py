@@ -94,25 +94,19 @@ def train(S,A,returns):
     # policy gradient with baseline
     # apply accumulated gradient across the episode
     for i in range(POLICY_TRAIN_ITERS):
-        # implement objective and update for policy
-        # should be similar to REINFORCE + small change
-    #################################
-
-        # update policy networks
+        # Update policy networks
         logsoftmax = torch.nn.LogSoftmax(dim=-1)
         log_pis = logsoftmax(pi(S)).gather(1, A.view(-1, 1)).view(-1)
         delta = returns - V(S)
         H = torch.arange(S.shape[0]).to(DEVICE)
         gammas = GAMMA ** H
         policy_loss = -(gammas * delta.detach() * log_pis).sum()
-        # policy_loss = -(delta.detach() * log_pis).mean()
         policy_optimizer.zero_grad()
         policy_loss.backward()
         policy_optimizer.step()
-
-        # update value function
+        # Update value function
         value_criterion = nn.MSELoss()
-        value_loss = value_criterion(V(S), returns)
+        value_loss = value_criterion(V(S), returns.unsqueeze(1))
         value_optimizer.zero_grad()
         value_loss.backward()
         value_optimizer.step()
