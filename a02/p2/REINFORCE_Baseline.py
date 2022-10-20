@@ -84,15 +84,7 @@ def policy(env, obs):
 # A = tensor of actions taken in episode/ batch of episodes
 # return = tensor where nth element is \sum^{T-n}_0 gamma^n * reward (return at step n of episode)
 def train(S,A,returns):
-    ###############################
-    # YOUR CODE HERE:
-
-    # Implement the training of the value function (follow slides, doing a gradient update per
-    # step in the episode)
-    # ....
-    
-    # policy gradient with baseline
-    # apply accumulated gradient across the episode
+    value_criterion = nn.MSELoss()
     for i in range(POLICY_TRAIN_ITERS):
         # Update policy networks
         logsoftmax = torch.nn.LogSoftmax(dim=-1)
@@ -105,7 +97,6 @@ def train(S,A,returns):
         policy_loss.backward()
         policy_optimizer.step()
         # Update value function
-        value_criterion = nn.MSELoss()
         value_loss = value_criterion(V(S), returns.unsqueeze(1))
         value_optimizer.zero_grad()
         value_loss.backward()

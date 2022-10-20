@@ -83,18 +83,8 @@ def policy(env, obs):
     probs = torch.nn.Softmax(dim=-1)(pi(t.f(obs)))
     return np.random.choice(ACT_N, p = probs.cpu().detach().numpy())
 
-# Training function
-# S = tensor of states observed in the episode/ batch of episodes
-# A = tensor of actions taken in episode/ batch of episodes
-# return = tensor where nth element is \sum^{T-n}_0 gamma^n * reward (return at step n of episode)
-# old_log_probs = tensor of pi(a | s) for policy the trajectory was collected under
 def train(S,A,returns, old_log_probs):
-
-    ###############################
-    # YOUR CODE HERE:
     value_criterion = torch.nn.MSELoss()
-    # PPO 
-    # gradient ascent for POLICY_TRAIN_ITERS steps
     for i in range(POLICY_TRAIN_ITERS):
         # Update policy networks
         advantage = (returns - V(S).squeeze()).detach()

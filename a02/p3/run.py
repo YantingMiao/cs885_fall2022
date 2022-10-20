@@ -19,7 +19,7 @@ def set_config():
     parser.add_argument('--eval_every', type=int, default=10)
     parser.add_argument('--batch_size', type=int, default=128)
     parser.add_argument('--hidden_size', type=int, default=256)
-    parser.add_argument('--lr', type=float, default=3e-04)
+    parser.add_argument('--lr', type=float, default=1e-04)
     parser.add_argument('--cql_alpha', type=float, default=1.0)
     parser.add_argument('--tau', type=float, default=1e-02)
 
