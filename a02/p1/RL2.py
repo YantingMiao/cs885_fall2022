@@ -1,6 +1,7 @@
 import numpy as np
 import MDP
 
+np.random.seed(42)
 class RL2:
     def __init__(self,mdp,sampleReward):
         '''Constructor for the RL class
@@ -110,7 +111,8 @@ class RL2:
         empiricalMeans = np.zeros(self.mdp.nActions,)
         actions_counter, ucb_rewards = np.zeros_like(empiricalMeans), [None] * nIterations
         state = 0
-        epsilon = 1e-08
+        # epsilon is to avoid numerical overflow issue when n_a = 0.
+        epsilon = 1e-16
         for t in range(1, nIterations + 1):
             action = self.UCBSelectAction(empiricalMeans, actions_counter, t, epsilon)
             [reward, state] = self.sampleRewardAndNextState(state, action)

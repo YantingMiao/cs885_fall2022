@@ -26,6 +26,7 @@ def plot_curves(data, colors, labels):
     plt.ylabel("Avg Rewards")
     plt.title("Results of Different Bandit Algorithms")
     plt.grid()
+    plt.savefig('./a2p1.png')
     plt.show()
 
 def main(n_eval=1000, nIterations=200):
@@ -53,27 +54,3 @@ def main(n_eval=1000, nIterations=200):
 
 if __name__ == "__main__":
     main(1000, 200)
-
-"""
-# Multi-arm bandit problems (3 arms with probabilities 0.25, 0.5 and 0.75)
-T = np.array([[[1]],[[1]],[[1]]])
-R = np.array([[0.25],[0.5],[0.75]])
-discount = 0.999
-mdp = MDP.MDP(T,R,discount)
-banditProblem = RL2.RL2(mdp,sampleBernoulli)
-
-# Test epsilon greedy strategy
-empiricalMeans, epsilon_rewards = banditProblem.epsilonGreedyBandit(nIterations=200)
-print("\nepsilonGreedyBandit results")
-print(empiricalMeans)
-
-# Test Thompson sampling strategy
-empiricalMeans, ts_rewards = banditProblem.thompsonSamplingBandit(prior=np.ones([mdp.nActions,2]),nIterations=200)
-print("\nthompsonSamplingBandit results")
-print(empiricalMeans)
-
-# Test UCB strategy
-empiricalMeans, ucb_rewards = banditProblem.UCBbandit(nIterations=200)
-print("\nUCBbandit results")
-print(empiricalMeans)
-"""
