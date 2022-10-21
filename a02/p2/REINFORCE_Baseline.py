@@ -96,6 +96,7 @@ def train(S,A,returns):
         policy_optimizer.zero_grad()
         policy_loss.backward()
         policy_optimizer.step()
+        
         # Update value function
         value_loss = value_criterion(V(S), returns.unsqueeze(1))
         value_optimizer.zero_grad()
