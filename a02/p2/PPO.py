@@ -86,23 +86,23 @@ def policy(env, obs):
 def train(S,A,returns, old_log_probs):
     value_criterion = torch.nn.MSELoss()
     for i in range(POLICY_TRAIN_ITERS):
+        # Update value networks
+        value_loss = value_criterion(V(S), returns.unsqueeze(1))
+        value_optimizer.zero_grad()
+        value_loss.backward()
+        value_optimizer.step()
+
         # Update policy networks
         advantage = (returns - V(S).squeeze()).detach()
         logsoftmax = torch.nn.LogSoftmax(dim=-1)
         log_pis = logsoftmax(pi(S)).gather(1, A.view(-1, 1)).view(-1)
-        ratio = torch.exp(log_pis - old_log_probs)
+        ratio = (log_pis - old_log_probs).exp()
         policy_target1 = ratio * advantage
         policy_target2 = torch.clamp(ratio, min=1-CLIP_PARAM, max=1+CLIP_PARAM) * advantage
         policy_loss = -torch.min(policy_target1, policy_target2).mean()
         policy_optimizer.zero_grad()
         policy_loss.backward()
         policy_optimizer.step()
-
-        # Update value networks
-        value_loss = value_criterion(V(S), returns.unsqueeze(1))
-        value_optimizer.zero_grad()
-        value_loss.backward()
-        value_optimizer.step()
 
 # Play episodes
 Rs = [] 
