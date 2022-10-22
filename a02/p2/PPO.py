@@ -35,7 +35,7 @@ if args.mode == "cartpole":
     OBS_N = 4               # State space size
     ACT_N = 2               # Action space size
     ENV_NAME = "CartPole-v0"
-    GAMMA = 0.99               # Discount factor in episodic reward objective
+    GAMMA = 0.99              # Discount factor in episodic reward objective
     LEARNING_RATE1 = 5e-4     # Learning rate for value optimizer
     LEARNING_RATE2 = 5e-4     # Learning rate for actor optimizer
     POLICY_TRAIN_ITERS = 10   # Training epochs
@@ -103,6 +103,7 @@ def train(S,A,returns, old_log_probs):
         value_optimizer.zero_grad()
         value_loss.backward()
         value_optimizer.step()
+
 # Play episodes
 Rs = [] 
 last25Rs = []

@@ -34,7 +34,7 @@ if args.mode == "cartpole":
     OBS_N = 4               # State space size
     ACT_N = 2               # Action space size
     ENV_NAME = "CartPole-v0"
-    GAMMA = 0.99             # Discount factor in episodic reward objective
+    GAMMA = 0.99           # Discount factor in episodic reward objective
     LEARNING_RATE1 = 5e-4   # Learning rate for value optimizer
     LEARNING_RATE2 = 5e-4   # Learning rate for actor optimizer
 elif "mountain_car" in args.mode:
@@ -86,22 +86,22 @@ def policy(env, obs):
 def train(S,A,returns):
     value_criterion = nn.MSELoss()
     for i in range(POLICY_TRAIN_ITERS):
+        # Update value function
+        value_loss = value_criterion(V(S), returns.unsqueeze(1))
+        value_optimizer.zero_grad()
+        value_loss.backward()
+        value_optimizer.step()
+        
         # Update policy networks
         logsoftmax = torch.nn.LogSoftmax(dim=-1)
         log_pis = logsoftmax(pi(S)).gather(1, A.view(-1, 1)).view(-1)
-        delta = returns - V(S)
+        delta = returns - V(S).squeeze()
         H = torch.arange(S.shape[0]).to(DEVICE)
         gammas = GAMMA ** H
         policy_loss = -(gammas * delta.detach() * log_pis).sum()
         policy_optimizer.zero_grad()
         policy_loss.backward()
         policy_optimizer.step()
-        
-        # Update value function
-        value_loss = value_criterion(V(S), returns.unsqueeze(1))
-        value_optimizer.zero_grad()
-        value_loss.backward()
-        value_optimizer.step()
 
 # Play episodes
 Rs = [] 

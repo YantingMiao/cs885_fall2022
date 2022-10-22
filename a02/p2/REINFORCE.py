@@ -34,7 +34,7 @@ if args.mode == "cartpole":
     OBS_N = 4               # State space size
     ACT_N = 2               # Action space size
     ENV_NAME = "CartPole-v0"
-    GAMMA = 0.99             # Discount factor in episodic reward objective
+    GAMMA = 0.99            # Discount factor in episodic reward objective
     LEARNING_RATE = 5e-4    # Learning rate for actor optimizer
 elif "mountain_car" in args.mode:
     OBS_N = 2
