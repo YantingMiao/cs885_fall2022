@@ -84,14 +84,13 @@ def policy(env, obs):
 # A = tensor of actions taken in episode/ batch of episodes
 # return = tensor where nth element is \sum^{T-n}_0 gamma^n * reward (return at step n of episode)
 def train(S,A,returns):
-    # Update value networks
-    for i in range(S.shape[0]):
-        value_loss = (V(S)[i] - returns[i]) ** 2
+    v_criterion = torch.nn.MSELoss()
+    for i in range(POLICY_TRAIN_ITERS):
+        # Update value networks
+        value_loss = v_criterion(V(S), returns.unsqueeze(1))
         value_optimizer.zero_grad()
         value_loss.backward()
         value_optimizer.step()
-        
-    for i in range(POLICY_TRAIN_ITERS):
         # Update policy networks
         logsoftmax = torch.nn.LogSoftmax(dim=-1)
         log_pis = logsoftmax(pi(S)).gather(1, A.view(-1, 1)).view(-1)
