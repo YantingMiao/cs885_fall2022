@@ -84,7 +84,7 @@ def policy(env, obs):
     return np.random.choice(ACT_N, p = probs.cpu().detach().numpy())
 
 def train(S,A,returns, old_log_probs):
-    value_criterion = torch.nn.MSELoss()
+    value_criterion = torch.nn.MSELoss(reduction='sum')
     for i in range(POLICY_TRAIN_ITERS):
         # Update value networks
         value_loss = value_criterion(V(S).squeeze(), returns)
