@@ -85,13 +85,15 @@ def policy(env, obs):
 
 def train(S,A,returns, old_log_probs):
     value_criterion = torch.nn.MSELoss()
-    for i in range(POLICY_TRAIN_ITERS):
-        # Update value networks
-        value_loss = value_criterion(V(S).squeeze(), returns)
+    # Update value networks
+    for i in range(S.shape[0]):
+        value = V(S).squeeze()
+        value_loss = value_criterion(value[i], returns[i])
         value_optimizer.zero_grad()
         value_loss.backward()
         value_optimizer.step()
 
+    for i in range(POLICY_TRAIN_ITERS):
         # Update policy networks
         advantage = (returns - V(S).squeeze()).detach()
         logsoftmax = torch.nn.LogSoftmax(dim=-1)
