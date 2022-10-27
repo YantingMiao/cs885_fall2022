@@ -87,7 +87,7 @@ def train(S,A,returns):
     v_criterion = torch.nn.MSELoss()
     for i in range(POLICY_TRAIN_ITERS):
         # Update value networks
-        value_loss = v_criterion(V(S), returns.unsqueeze(1))
+        value_loss = v_criterion(V(S).squeeze(), returns)
         value_optimizer.zero_grad()
         value_loss.backward()
         value_optimizer.step()
