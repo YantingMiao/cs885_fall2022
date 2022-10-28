@@ -138,8 +138,8 @@ def plot_curves(data, colors, labels, path='./results.png'):
 
 def main():
     config = set_config()
-    # seeds = [1]
-    seeds = [1, 2, 3, 4, 5]
+    seeds = [1]
+    # seeds = [1, 2, 3, 4, 5]
     algos = ['cqldqn', 'dqn']
     plot_data = []
     for algo in algos:
