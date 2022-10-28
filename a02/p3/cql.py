@@ -53,7 +53,7 @@ class CQLDQN(nn.Module):
         q_pi = q_values.max(1)[0]
 
         bellman_error = self.q_criterion(q_pred, q_targets)
-        cql_loss = q_pi.mean() - q_pred.mean()
+        cql_loss = q_pi.mean() - q_pred.squeeze().mean()
         total_loss = self.alpha * cql_loss + bellman_error
         self.q_optimizer.zero_grad()
         total_loss.backward()
