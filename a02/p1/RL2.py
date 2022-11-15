@@ -90,7 +90,7 @@ class RL2:
             prior[action][0] += reward
             prior[action][1] += (1 - reward)
         return empiricalMeans, ts_rewards
-    
+        
     def UCBSelectAction(self, values, actions_counter,timestep, epsilon=1e-08):
         temp = 2 * np.log(timestep) * np.ones_like(values)
         upper_bound = np.sqrt(np.divide(temp, actions_counter + epsilon))
